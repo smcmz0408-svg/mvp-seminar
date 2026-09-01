@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>페더 합성 배드민턴 스윙 영상 생성기</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        font-family: "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+        background: #f4f6f8;
+        color: #18202d;
+      }
+
+      main {
+        width: min(720px, 100%);
+        padding: 28px;
+        border: 1px solid #d8dee8;
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 28px;
+        letter-spacing: 0;
+      }
+
+      p {
+        line-height: 1.6;
+        color: #536174;
+      }
+
+      button,
+      a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 42px;
+        padding: 0 14px;
+        border-radius: 8px;
+        border: 1px solid #2f7d68;
+        background: #2f7d68;
+        color: #ffffff;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        margin: 18px 0;
+        border-radius: 8px;
+        background: #e8eef5;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>페더 합성 배드민턴 스윙 영상 생성기</h1>
+      <p>실제 사람이나 실제 연구 자료가 아닌 브라우저 생성 가상 영상입니다. 버튼을 누르면 8초짜리 WebM 파일을 만들고 내려받을 수 있습니다.</p>
+      <canvas id="canvas" width="960" height="540"></canvas>
+      <div class="actions">
+        <button id="make" type="button">합성 영상 만들기</button>
+        <a id="download" hidden download="synthetic-badminton-swing.webm">WebM 내려받기</a>
+      </div>
+      <p id="status">준비됨</p>
+    </main>
+
+    <script>
+      const canvas = document.querySelector("#canvas");
+      const context = canvas.getContext("2d");
+      const makeButton = document.querySelector("#make");
+      const download = document.querySelector("#download");
+      const statusText = document.querySelector("#status");
+
+      drawFrame(0);
+
+      makeButton.addEventListener("click", () => {
+        const chunks = [];
+        const stream = canvas.captureStream(30);
+        const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+        let frame = 0;
+        const totalFrames = 240;
+
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0) chunks.push(event.data);
+        };
+
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: "video/webm" });
+          download.href = URL.createObjectURL(blob);
+          download.hidden = false;
+          statusText.textContent = "합성 WebM 생성 완료. 내려받은 뒤 페더 앱에서 선택해 확인하세요.";
+        };
+
+        recorder.start();
+        statusText.textContent = "합성 영상을 만들고 있습니다.";
+
+        const timer = setInterval(() => {
+          drawFrame(frame / 30);
+          frame += 1;
+          if (frame > totalFrames) {
+            clearInterval(timer);
+            recorder.stop();
+          }
+        }, 1000 / 30);
+      });
+
+      function drawFrame(time) {
+        context.fillStyle = "#f8fafc";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = "#dbe4ef";
+        context.fillRect(0, 380, canvas.width, 4);
+
+        context.fillStyle = "#2f7d68";
+        context.font = "700 34px Segoe UI";
+        context.fillText("Synthetic badminton swing", 34, 58);
+        context.fillStyle = "#536174";
+        context.font = "24px Segoe UI";
+        context.fillText(`${time.toFixed(1)}s`, 34, 96);
+
+        const centerX = 420 + Math.sin(time * 2.6) * 90;
+        const centerY = 260;
+        const armAngle = -1.1 + Math.sin(time * 3.1) * 0.95;
+        const racketX = centerX + Math.cos(armAngle) * 190;
+        const racketY = centerY + Math.sin(armAngle) * 190;
+
+        context.strokeStyle = "#18202d";
+        context.lineWidth = 14;
+        context.lineCap = "round";
+        context.beginPath();
+        context.moveTo(centerX, centerY);
+        context.lineTo(centerX - 44, centerY + 122);
+        context.moveTo(centerX, centerY);
+        context.lineTo(racketX, racketY);
+        context.moveTo(centerX - 44, centerY + 122);
+        context.lineTo(centerX - 96, centerY + 220);
+        context.moveTo(centerX - 44, centerY + 122);
+        context.lineTo(centerX + 42, centerY + 218);
+        context.stroke();
+
+        context.fillStyle = "#f1b78f";
+        context.beginPath();
+        context.arc(centerX, centerY - 70, 42, 0, Math.PI * 2);
+        context.fill();
+
+        context.strokeStyle = "#b84f43";
+        context.lineWidth = 8;
+        context.beginPath();
+        context.moveTo(racketX, racketY);
+        context.lineTo(racketX + 72, racketY - 36);
+        context.stroke();
+
+        context.fillStyle = "#f0c84b";
+        context.beginPath();
+        context.arc(700 - time * 70, 128 + Math.sin(time * 4) * 42, 14, 0, Math.PI * 2);
+        context.fill();
+      }
+    </script>
+  </body>
+</html>
